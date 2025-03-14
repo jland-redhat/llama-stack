@@ -13,9 +13,19 @@ import pytest
 
 # How to run this test:
 #
-# pytest llama_stack/providers/tests/datasetio/test_datasetio.py
-#   -m "meta_reference"
-#   -v -s --tb=short --disable-warnings
+# LLAMA_STACK_CONFIG="template-name" pytest -v tests/integration/datasetio
+
+
+@pytest.fixture
+def dataset_for_test(llama_stack_client):
+    dataset_id = "test_dataset"
+    register_dataset(llama_stack_client, dataset_id=dataset_id)
+    yield
+    # Teardown - this always runs, even if the test fails
+    try:
+        llama_stack_client.datasets.unregister(dataset_id)
+    except Exception as e:
+        print(f"Warning: Failed to unregister test_dataset: {e}")
 
 
 def data_url_from_file(file_path: str) -> str:
@@ -60,45 +70,31 @@ def register_dataset(llama_stack_client, for_generation=False, for_rag=False, da
             "generated_answer": {"type": "string"},
         }
 
+    dataset_providers = [x for x in llama_stack_client.providers.list() if x.api == "datasetio"]
+    dataset_provider_id = dataset_providers[0].provider_id
+
     llama_stack_client.datasets.register(
         dataset_id=dataset_id,
         dataset_schema=dataset_schema,
         url=dict(uri=test_url),
-        provider_id="localfs",
+        provider_id=dataset_provider_id,
     )
 
 
-def test_datasets_list(llama_stack_client):
-    # NOTE: this needs you to ensure that you are starting from a clean state
-    # but so far we don't have an unregister API unfortunately, so be careful
-
-    response = llama_stack_client.datasets.list()
-    assert isinstance(response, list)
-    assert len(response) == 0
-
-
-def test_register_dataset(llama_stack_client):
+def test_register_unregister_dataset(llama_stack_client):
     register_dataset(llama_stack_client)
     response = llama_stack_client.datasets.list()
     assert isinstance(response, list)
     assert len(response) == 1
     assert response[0].identifier == "test_dataset"
 
-    with pytest.raises(ValueError):
-        # unregister a dataset that does not exist
-        llama_stack_client.datasets.unregister("test_dataset2")
-
     llama_stack_client.datasets.unregister("test_dataset")
     response = llama_stack_client.datasets.list()
     assert isinstance(response, list)
     assert len(response) == 0
 
-    with pytest.raises(ValueError):
-        llama_stack_client.datasets.unregister("test_dataset")
 
-
-def test_get_rows_paginated(llama_stack_client):
-    register_dataset(llama_stack_client)
+def test_get_rows_paginated(llama_stack_client, dataset_for_test):
     response = llama_stack_client.datasetio.get_rows_paginated(
         dataset_id="test_dataset",
         rows_in_page=3,

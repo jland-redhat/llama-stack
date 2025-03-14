@@ -61,6 +61,10 @@ A number of "adapters" are available for some popular Inference and Vector Store
 |  Groq  |  Hosted  |
 |  SambaNova  |  Hosted  |
 | PyTorch ExecuTorch | On-device iOS, Android |
+|  OpenAI  |  Hosted  |
+|  Anthropic  |  Hosted  |
+|  Gemini  |  Hosted  |
+
 
 **Vector IO API**
 |  **Provider** |  **Environments** |
@@ -68,6 +72,7 @@ A number of "adapters" are available for some popular Inference and Vector Store
 |  FAISS | Single Node |
 |  SQLite-Vec| Single Node |
 |  Chroma | Hosted and Single Node |
+|  Milvus | Hosted and Single Node |
 |  Postgres (PGVector) | Hosted and Single Node |
 |  Weaviate | Hosted |
 
